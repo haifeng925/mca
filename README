@@ -1,0 +1,6 @@
+This is the souce code for multicore architechture labor
+
+git add .
+git commit -m ""
+git remote origin git@github.com:haifeng925/mca.git
+git push -u origin master
