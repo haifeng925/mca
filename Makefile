@@ -14,8 +14,6 @@ MD5 = earth-8k.md5
 
 
 
-
-
 all: $(EXEC)
 
 $(EXEC): $(OBJ)
