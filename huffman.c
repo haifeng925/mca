@@ -203,6 +203,7 @@ static int process_Huffman_data_unit(struct huffman_context *hc, struct jdec_tas
   return 0;
 }
 
+
 #pragma omp task inout(*hc) input(*hdata) output(*idata)
 void process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata,  struct idct_data *idata){
   // Y

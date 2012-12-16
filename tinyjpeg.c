@@ -62,7 +62,6 @@ void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
   unsigned int bytes_per_blocklines= jdc->width *3*16;
   unsigned int bytes_per_mcu = 3*16;
 
-  
   for (i=0; i<COMPONENTS; i++)
     hc->component_infos[i].previous_DC = 0;
 

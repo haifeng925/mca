@@ -1,4 +1,4 @@
-CFLAGS = -Wall -Wextra -O2 -g -k -DDEBUG=0
+CFLAGS = -Wall -Wextra -O2 -g -DDEBUG=0
 LDFLAGS := -pthread
 CC = sscc
 RM = rm -f
