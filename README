@@ -7,4 +7,10 @@ git push -u origin master
 
 
 make run
-make benchmark ## with benchmark
+make bmk   ## with benchmark, jpeg without markers
+make bmk_mk ## with benchmark, jpeg with markers
+
+
+Seq version
+  make bmk : 6.01s --> 4.04s --> 3.84s --> 3.73s
+  make bmk_mk : 4.41s --> 4.84s --> 3.69s
