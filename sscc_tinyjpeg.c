@@ -3179,6 +3179,9 @@ void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask)
             cc->rgb_data += (bytes_per_blocklines - jdc->width * 3);
         }
     }
+    {
+        nanos_omp_barrier();
+    }
 }
 struct jpeg_decode_context *create_jpeg_decode_context(struct jpeg_parse_context *jpc, uint8_t *rgb_data)
 {

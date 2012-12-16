@@ -43,8 +43,8 @@ checkmk:
 	cd ../test_images && $(MD5SUM) $(MD5_MK)
 
 bmk :
-	./$(EXEC) --benchmark $(IMGIN) $(IMGOUT)
+	rm $(IMGOUT) && ./$(EXEC) --benchmark $(IMGIN) $(IMGOUT)
 
 bmk_mk :
-	./$(EXEC) --benchmark $(IMGIN_MK) $(IMGOUT_MK)
+	rm $(IMGOUT_MK) && ./$(EXEC) --benchmark $(IMGIN_MK) $(IMGOUT_MK)
 

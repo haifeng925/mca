@@ -115,7 +115,7 @@ int convert_one_image(const char *infilename, const char *outfilename)
   struct jpeg_decode_context *jdc=NULL;
   struct write_context* wc;
 
-  struct jdec_task jtask;
+  struct jdec_task *jtask;
 
   unsigned int length_of_file;
   int width, height;
@@ -166,11 +166,17 @@ int convert_one_image(const char *infilename, const char *outfilename)
 
   //create_jdec_task needs to be performed sequentially
   //decode_jpeg_task can be performed in parallel for the case with markers
+  jtask = malloc((sizeof(struct jdec_task)) * ntasks);
   for(i=0; i<ntasks; i++) {
-    create_jdec_task(jpc, &jtask, i);
-    decode_jpeg_task(jdc, &jtask);
+    create_jdec_task(jpc, jtask+i, i);
+ //   decode_jpeg_task(jdc, &jtask);
   }
-
+  
+  int j;
+  for(j=0; j<ntasks; j++){
+    decode_jpeg_task(jdc, jtask+j);
+  }
+#pragma omp barrier
   //file write could already start before the complete image is decoded
   write_tga_header(wc);
   for (i=0; i<mcus_in_height; i++){
