@@ -9,8 +9,14 @@ EXEC = tinyjpeg
 
 IMGIN = ../test_images/earth-8k.jpg
 IMGOUT =../test_images/earth-8k.tga
+
+IMGIN_MK = ../test_images/earth-8k-markers.jpg
+IMGOUT_MK = ../test_images/earth-8k-markers.tga
+
 MD5SUM = md5sum --check
 MD5 = earth-8k.md5
+
+MD5_MK = earth-8k-markers.md5
 
 
 
@@ -27,6 +33,18 @@ clean:
 
 run:
 	./$(EXEC) $(IMGIN) $(IMGOUT)
+runmk:
+	./$(EXEC) $(IMGIN_MK) $(IMGOUT_MK)
 
 check:
 	cd ../test_images && $(MD5SUM) $(MD5)
+
+checkmk:
+	cd ../test_images && $(MD5SUM) $(MD5_MK)
+
+bmk :
+	./$(EXEC) --benchmark $(IMGIN) $(IMGOUT)
+
+bmk_mk :
+	./$(EXEC) --benchmark $(IMGIN_MK) $(IMGOUT_MK)
+
