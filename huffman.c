@@ -203,23 +203,24 @@ static int process_Huffman_data_unit(struct huffman_context *hc, struct jdec_tas
   return 0;
 }
 
-int process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct idct_data *idata){
+#pragma omp task inout(*hc) input(*hdata) output(*idata)
+void process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata,  struct idct_data *idata){
   // Y
   int i;
   for (i=0; i<4; i++){
     if(process_Huffman_data_unit(hc, hdata, cY, idata->DCT_Y[i])){
-      return -1;
+     // return -1;
     }
   }
   //Cb
   if(process_Huffman_data_unit(hc, hdata, cCb, idata->DCT_C[0])){
-    return -1;
+    //return -1;
   }
   //Cr
   if(process_Huffman_data_unit(hc, hdata, cCr, idata->DCT_C[1])){
-    return -1;
+    //return -1;
   }
-  return 0;
+  //return 0;
 }
 
 struct huffman_context *create_huffman_context(struct jpeg_parse_context *jpc){

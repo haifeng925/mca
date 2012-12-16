@@ -3384,7 +3384,7 @@ static int process_Huffman_data_unit(struct huffman_context *hc, struct jdec_tas
         DCT_out[j] = DCT[zigzag[j]];
     return 0;
 }
-int process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct idct_data *idata)
+void process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct idct_data *idata)
 {
     int i;
     for (i = 0;
@@ -3393,18 +3393,14 @@ int process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, str
     {
         if (process_Huffman_data_unit(hc, hdata, 0, idata->DCT_Y[i]))
         {
-            return - 1;
         }
     }
     if (process_Huffman_data_unit(hc, hdata, 1, idata->DCT_C[0]))
     {
-        return - 1;
     }
     if (process_Huffman_data_unit(hc, hdata, 2, idata->DCT_C[1]))
     {
-        return - 1;
     }
-    return 0;
 }
 struct huffman_context *create_huffman_context(struct jpeg_parse_context *jpc)
 {

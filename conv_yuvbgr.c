@@ -38,6 +38,8 @@ static unsigned char clamp(int i)
 *  | 3 | 4 |
 *  `-------'
 */
+
+#pragma omp task inout(*cc) output(*yuv)
 void convert_yuv_bgr(struct cc_context *cc, struct yuv_data *yuv)
 {
   const unsigned char *Y, *Cb, *Cr;
