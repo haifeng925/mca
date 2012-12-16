@@ -176,7 +176,7 @@ int convert_one_image(const char *infilename, const char *outfilename)
   for(j=0; j<ntasks; j++){
     decode_jpeg_task(jdc, jtask+j);
   }
-#pragma omp barrier
+//#pragma omp barrier
   //file write could already start before the complete image is decoded
   write_tga_header(wc);
   for (i=0; i<mcus_in_height; i++){

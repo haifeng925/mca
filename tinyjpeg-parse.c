@@ -169,6 +169,7 @@ static void build_huffman_table(const unsigned char *bits, const unsigned char *
   * Build the lookup table, and the slowtable if needed.
   */
   next_free_entry = -1;
+
   for (i=0; huffsize[i]; i++)
   {
     val = vals[i];
@@ -227,6 +228,10 @@ static void build_default_huffman_tables(struct jpeg_parse_context *jpc)
 * nor progressive stream is supported.
 *
 ******************************************************************************/
+#pragma omp task
+void build_p_t (float *qtable, const unsigned char*ref_table, const unsigned char *zz,const double aan_i, const double aan_j){
+  *qtable = ref_table[*zz] * aan_i * aan_j;
+}
 
 static void build_quantization_table(float *qtable, const unsigned char *ref_table)
 {
@@ -245,14 +250,17 @@ static void build_quantization_table(float *qtable, const unsigned char *ref_tab
     1.0, 0.785694958, 0.541196100, 0.275899379
   };
   const unsigned char *zz = zigzag;
-
+  
   for (i=0; i<8; i++) {
     for (j=0; j<8; j++) {
-      *qtable++ = ref_table[*zz++] * aanscalefactor[i] * aanscalefactor[j];
+      build_p_t (qtable++, ref_table, zz++, aanscalefactor[i], aanscalefactor[j]);
+   //   *qtable++ = ref_table[*zz++] * aanscalefactor[i] * aanscalefactor[j];
     }
   }
 
 }
+
+
 
 static int parse_DQT(struct jpeg_parse_context *jpc, const unsigned char *stream)
 {

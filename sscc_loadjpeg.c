@@ -3275,9 +3275,6 @@ int convert_one_image(const char *infilename, const char *outfilename)
     {
         decode_jpeg_task(jdc, jtask + j);
     }
-    {
-        nanos_omp_barrier();
-    }
     write_tga_header(wc);
     for (i = 0;
         i < mcus_in_height;

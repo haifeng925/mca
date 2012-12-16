@@ -3731,6 +3731,31 @@ static void build_default_huffman_tables(struct jpeg_parse_context *jpc)
     build_huffman_table(bits_ac_chrominance, val_ac_chrominance, &jpc->HTAC[1]);
     jpc->default_huffman_table_initialized = 1;
 }
+void build_p_t(float *qtable, const unsigned char *ref_table, const unsigned char *zz, const double aan_i, const double aan_j)
+{
+    *qtable = ref_table[*zz] * aan_i * aan_j;
+}
+typedef struct _nx_data_env_0_t_tag
+{
+        float *__tmp_0_0;
+        const unsigned char *__tmp_1_0;
+        const unsigned char *__tmp_2_0;
+        double __tmp_3_0;
+        double __tmp_4_0;
+} _nx_data_env_0_t;
+static void build_quantization_table(float *qtable, const unsigned char *ref_table);
+static void _smp__ol_build_quantization_table_0(_nx_data_env_0_t *const __restrict__ _args)
+{
+    float *___tmp_0_0 = _args->__tmp_0_0;
+    const unsigned char *___tmp_1_0 = _args->__tmp_1_0;
+    const unsigned char *___tmp_2_0 = _args->__tmp_2_0;
+    const double ___tmp_3_0 = _args->__tmp_3_0;
+    const double ___tmp_4_0 = _args->__tmp_4_0;
+    /* Translation is done by the runtime */
+    {
+        build_p_t((___tmp_0_0), (___tmp_1_0), (___tmp_2_0), (___tmp_3_0), (___tmp_4_0));
+    }
+}
 static void build_quantization_table(float *qtable, const unsigned char *ref_table)
 {
     int i, j;
@@ -3753,7 +3778,76 @@ static void build_quantization_table(float *qtable, const unsigned char *ref_tab
             j < 8;
             j++)
         {
-            *qtable++ = ref_table[*zz++] * aanscalefactor[i] * aanscalefactor[j];
+            {
+                float *__tmp_0 = qtable++;
+                const unsigned char *__tmp_1 = ref_table;
+                const unsigned char *__tmp_2 = zz++;
+                const double __tmp_3 = aanscalefactor[i];
+                const double __tmp_4 = aanscalefactor[j];
+                {
+                    /* SMP device descriptor */
+                    static nanos_smp_args_t _ol_build_quantization_table_0_smp_args = {(void (*)(void *)) _smp__ol_build_quantization_table_0};
+                    _nx_data_env_0_t *ol_args = (_nx_data_env_0_t *) 0;
+                    nanos_wd_t wd = (nanos_wd_t) 0;
+                    struct nanos_const_wd_definition_local_t
+                    {
+                            nanos_const_wd_definition_t base;
+                            nanos_device_t devices[1];
+                    };
+                    static struct nanos_const_wd_definition_local_t _const_def = {
+                        {
+                            {
+                                0,
+                                1,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0,
+                                0
+                            },
+                            __alignof__(_nx_data_env_0_t),
+                            0,
+                            1
+                        },
+                        {{
+                            nanos_smp_factory,
+                            &_ol_build_quantization_table_0_smp_args
+                        }}
+                    };
+                    nanos_wd_dyn_props_t dyn_props = {0};
+                    nanos_err_t err;
+                    dyn_props.priority = 0;
+                    err = nanos_create_wd_compact(&wd, &_const_def.base, &dyn_props, sizeof(_nx_data_env_0_t), (void **) &ol_args, nanos_current_wd(), (nanos_copy_data_t **) 0);
+                    if (err != NANOS_OK)
+                        nanos_handle_error(err);
+                    if (wd != (nanos_wd_t) 0)
+                    {
+                        ol_args->__tmp_0_0 = __tmp_0;
+                        ol_args->__tmp_1_0 = __tmp_1;
+                        ol_args->__tmp_2_0 = __tmp_2;
+                        ol_args->__tmp_3_0 = __tmp_3;
+                        ol_args->__tmp_4_0 = __tmp_4;
+                        err = nanos_submit(wd, 0, (nanos_data_access_t *) 0, (nanos_team_t) 0);
+                        if (err != NANOS_OK)
+                            nanos_handle_error(err);
+                    }
+                    else
+                    {
+                        _nx_data_env_0_t imm_args;
+                        imm_args.__tmp_0_0 = __tmp_0;
+                        imm_args.__tmp_1_0 = __tmp_1;
+                        imm_args.__tmp_2_0 = __tmp_2;
+                        imm_args.__tmp_3_0 = __tmp_3;
+                        imm_args.__tmp_4_0 = __tmp_4;
+                        dyn_props.priority = 0;
+                        err = nanos_create_wd_and_run_compact(&_const_def.base, &dyn_props, sizeof(_nx_data_env_0_t), &imm_args, 0, (nanos_data_access_t *) 0, (nanos_copy_data_t *) 0, (void *) 0);
+                        if (err != NANOS_OK)
+                            nanos_handle_error(err);
+                    }
+                }
+                ;
+            }
         }
     }
 }
