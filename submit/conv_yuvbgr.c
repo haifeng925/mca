@@ -15,7 +15,6 @@
 #include <stdlib.h>
 #include "tinyjpeg-internal.h"
 
-
 static unsigned char clamp(int i)
 {
   if (i<0)
@@ -39,8 +38,12 @@ static unsigned char clamp(int i)
 *  `-------'
 */
 
+
+
 void convert_yuv_bgr(struct cc_context *cc, struct yuv_data *yuv)
 {
+
+  
   const unsigned char *Y, *Cb, *Cr;
   unsigned char *p, *p2;
   int i,j;
@@ -102,6 +105,25 @@ void convert_yuv_bgr(struct cc_context *cc, struct yuv_data *yuv)
     Y  += 16;
     p  += offset_to_next_row;
     p2 += offset_to_next_row;
+  }
+}
+
+void my_convert_yuv_bgr(struct cc_context *cc, struct my_yuv_data *my_yuv, unsigned int bytes_per_mcu, int mcus_posx, int mcus_posy, struct my_jpeg_decode_context *jdc, unsigned int bytes_per_blocklines) {
+
+  int i;
+  struct yuv_data *yuv;
+
+  for (i = 0; i<MY_CHUNKSIZE && mcus_posy < cc->mcus_in_height;i++){
+    yuv = &(my_yuv->d[i]);
+    convert_yuv_bgr(cc,yuv);
+  
+    cc->rgb_data += bytes_per_mcu;
+    mcus_posx++;
+    if (mcus_posx >= jdc->mcus_in_width){
+      mcus_posy++;
+      mcus_posx = 0;
+      cc->rgb_data += (bytes_per_blocklines - jdc->width*3);
+    }
   }
 }
 

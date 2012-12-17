@@ -140,7 +140,8 @@ static int get_next_huffman_code(struct jdec_task *hdata, struct huffman_table *
 * The table coefficients is already dezigzaged at the end of the operation.
 *
 */
-static int process_Huffman_data_unit(struct huffman_context *hc, struct jdec_task *hdata, int component, short int *DCT_out)
+
+int process_Huffman_data_unit(struct huffman_context *hc, struct jdec_task *hdata, int component, short int *DCT_out)
 {
   unsigned char j;
   unsigned int huff_code;
@@ -203,25 +204,34 @@ static int process_Huffman_data_unit(struct huffman_context *hc, struct jdec_tas
   return 0;
 }
 
-
-
-void process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata,  struct idct_data *idata){
+int process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct idct_data *idata){
   // Y
   int i;
   for (i=0; i<4; i++){
     if(process_Huffman_data_unit(hc, hdata, cY, idata->DCT_Y[i])){
-     // return -1;
+      return -1;
     }
   }
   //Cb
   if(process_Huffman_data_unit(hc, hdata, cCb, idata->DCT_C[0])){
-    //return -1;
+    return -1;
   }
   //Cr
   if(process_Huffman_data_unit(hc, hdata, cCr, idata->DCT_C[1])){
-    //return -1;
+    return -1;
   }
-  //return 0;
+  return 0;
+}
+
+void my_process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct my_idct_data *my_idata){
+
+  int i;
+  struct idct_data *idata;
+
+  for (i = 0; i<MY_CHUNKSIZE;i++){
+    idata = &(my_idata->d[i]);
+    process_huffman_mcu(hc, hdata, idata);
+  }
 }
 
 struct huffman_context *create_huffman_context(struct jpeg_parse_context *jpc){

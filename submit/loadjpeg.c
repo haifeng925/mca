@@ -37,10 +37,8 @@
 
 #include "tinyjpeg.h"
 
-typedef struct timeval timer;
-#define TIME(x) gettimeofday(&x, NULL);
+#include "timeutil.h"
 
-long timevaldiff(timer *start, timer *finish);
 
 static void exitmessage(const char *message)
 {
@@ -112,10 +110,11 @@ int convert_one_image(const char *infilename, const char *outfilename)
 {
   FILE *fp;
   struct jpeg_parse_context *jpc;
-  struct jpeg_decode_context *jdc=NULL;
   struct write_context* wc;
 
   struct jdec_task *jtask;
+  struct my_jpeg_decode_context *my_jdc;
+  struct jpeg_decode_context **jdc_array;
 
   unsigned int length_of_file;
   int width, height;
@@ -124,6 +123,8 @@ int convert_one_image(const char *infilename, const char *outfilename)
   uint8_t *rgb_data;
   int i;
   int ntasks;
+
+  struct timeval start, end;
 
   /* Load the Jpeg into memory */
   fp = fopen(infilename, "rb");
@@ -159,34 +160,76 @@ int convert_one_image(const char *infilename, const char *outfilename)
     ntasks = 1;
     jpc->restart_interval = mcus_in_height * mcus_in_width;
   }
-  jdc = create_jpeg_decode_context(jpc, rgb_data);
   wc = create_write_context(jpc, outfilename, rgb_data);
 
   printf("Decoding JPEG image...\n");
+
+  //printf("ntasks=%d\n", ntasks);
   //create_jdec_task needs to be performed sequentially
   //decode_jpeg_task can be performed in parallel for the case with markers
-  jtask = malloc((sizeof(struct jdec_task)) * ntasks);
+
+  // create tasks
+  TIME(start);
+
+  jtask = (struct jdec_task *)malloc(ntasks*sizeof(struct jdec_task));
+  if (jtask == NULL)
+    exitmessage("Not enough memory  to alloc the structure need for create tasks\n");
+
   for(i=0; i<ntasks; i++) {
-    create_jdec_task(jpc, jtask+i, i);
- //   decode_jpeg_task(jdc, &jtask);
+    create_jdec_task(jpc, &(jtask[i]), i);
   }
   
-  int j;
-  for(j=0; j<ntasks; j++){
-    decode_jpeg_task(jdc, jtask+j);
+  TIME(end);
+  printtime("create tasks", &start, &end);
+
+
+
+  //decode tasks
+  TIME(start);
+
+  // coopy the jdc
+  //jdc_array_clone(my_jdc_array, jdc, ntasks);//implement this function, it has to keep the same rgb data but different data between
+  if (ntasks == 1) {
+	    my_jdc = create_my_jpeg_decode_context(jpc, rgb_data);
+	    pipeline_decode_jpeg_task(my_jdc, &(jtask[0]));
+  } else {
+	  jdc_array = (struct jpeg_decode_context **)malloc(ntasks*sizeof(struct jpeg_decode_context *));
+	  if (jdc_array == NULL)
+		  exitmessage("Not enough memory to alloc the structure need for all parallel jdcs\n");
+    		
+	  for(i=0; i<ntasks; i++) {
+		jdc_array[i] = create_jpeg_decode_context(jpc, rgb_data);
+	  }
+
+	  for(i=0; i<ntasks; i++) {
+	    //this function should run parallel
+	    decode_jpeg_task(jdc_array[i], &(jtask[i]));
+	  }
+	  #pragma omp barrier
+
+	  for (i = 0; i<ntasks;i++) {
+	    destroy_jpeg_decode_context((jdc_array[i]));
+	  }
+	  free(jdc_array);
   }
-#pragma omp barrier
+  
+  TIME(end);
+  printtime("decode tasks", &start, &end);
+
+  
+  
   //file write could already start before the complete image is decoded
   write_tga_header(wc);
   for (i=0; i<mcus_in_height; i++){
     write_next_mcu_line(wc);
   }
 
+  free(jtask);
+
   free(buf);
   free(rgb_data);
 
   destroy_jpeg_parse_context(jpc);
-  destroy_jpeg_decode_context(jdc);
   destroy_write_context(wc);
 
   return 0;
@@ -201,15 +244,6 @@ static void usage(void)
   fprintf(stderr, "option:\n");
   fprintf(stderr, "  --benchmark - Measure the timing of 1 conversion\n");
   exit(1);
-}
-/*
-*   Calculates the time difference between start and finish in msecs.
-*/
-long timevaldiff(timer *start, timer *finish){
-  long msec;
-  msec = (finish->tv_sec - start->tv_sec)*1000;
-  msec += (finish->tv_usec - start->tv_usec)/1000;
-  return msec;
 }
 
 /**

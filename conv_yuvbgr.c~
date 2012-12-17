@@ -39,7 +39,6 @@ static unsigned char clamp(int i)
 *  `-------'
 */
 
-
 #pragma omp task inout(*cc) output(*yuv)
 void convert_yuv_bgr(struct cc_context *cc, struct yuv_data *yuv)
 {

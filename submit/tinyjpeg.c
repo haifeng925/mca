@@ -39,6 +39,7 @@
 
 #include "tinyjpeg.h"
 #include "tinyjpeg-internal.h"
+#include "timeutil.h"
 
 /* Global variable to return the last error found while deconding */
 char error_string[256];
@@ -47,6 +48,39 @@ const char *tinyjpeg_get_errorstring() {
   return error_string;
 }
 
+void pipeline_decode_jpeg_task(struct my_jpeg_decode_context *my_jdc, struct jdec_task *jtask){
+  struct huffman_context *hc = my_jdc->hc;
+  struct idct_context *ic = my_jdc->ic;
+  struct cc_context *cc = my_jdc->cc;
+
+  int i, j;
+  int mcus_posx=0;
+  int mcus_posy=0;
+  unsigned int bytes_per_blocklines= my_jdc->width *3*16;
+  unsigned int bytes_per_mcu = 3*16;
+
+  for (i=0; i<COMPONENTS; i++)
+    hc->component_infos[i].previous_DC = 0;
+
+  cc->rgb_data = cc->base + jtask->mcus_posy * bytes_per_blocklines + jtask->mcus_posx * bytes_per_mcu;
+  mcus_posx = jtask->mcus_posx;
+  mcus_posy = jtask->mcus_posy;
+
+  for (j=0; j<my_jdc->restart_interval && mcus_posy< cc->mcus_in_height; j++) {
+
+     my_process_huffman_mcu(hc, jtask, &(my_jdc->my_idata[j%MY_NR_BUFFERS]));
+     my_idct_mcu(ic, &(my_jdc->my_idata[j%MY_NR_BUFFERS]), &(my_jdc->my_yuvdata[j%MY_NR_BUFFERS]));
+     my_convert_yuv_bgr(cc, &(my_jdc->my_yuvdata[j%MY_NR_BUFFERS]), bytes_per_mcu, mcus_posx, mcus_posy, my_jdc, bytes_per_blocklines);
+
+     mcus_posx = mcus_posx + MY_CHUNKSIZE;
+     if (mcus_posx >= my_jdc->mcus_in_width){
+       int addy = mcus_posx / my_jdc->mcus_in_width;
+       mcus_posy = mcus_posy + addy;
+       mcus_posx = mcus_posx % my_jdc->mcus_in_width;
+     }
+  }
+  #pragma omp barrier
+}
 
 void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
   struct huffman_context *hc = jdc->hc;
@@ -62,8 +96,9 @@ void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
   unsigned int bytes_per_blocklines= jdc->width *3*16;
   unsigned int bytes_per_mcu = 3*16;
 
-  for (i=0; i<COMPONENTS; i++)
+  for (i=0; i<COMPONENTS; i++){
     hc->component_infos[i].previous_DC = 0;
+  }
 
   cc->rgb_data = cc->base + jtask->mcus_posy * bytes_per_blocklines + jtask->mcus_posx * bytes_per_mcu;
   mcus_posx = jtask->mcus_posx;
@@ -73,7 +108,7 @@ void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
     process_huffman_mcu(hc, jtask, idata);
     idct_mcu(ic, idata, yuvdata);
     convert_yuv_bgr(cc, yuvdata);
-    
+
     cc->rgb_data += bytes_per_mcu;
     mcus_posx++;
     if (mcus_posx >= jdc->mcus_in_width){
@@ -81,9 +116,25 @@ void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
       mcus_posx = 0;
       cc->rgb_data += (bytes_per_blocklines - jdc->width*3);
     }
-  }	
- // #pragma omp barrier
+  }
 
+}
+
+struct my_jpeg_decode_context *create_my_jpeg_decode_context(struct jpeg_parse_context *jpc, uint8_t *rgb_data){
+
+  struct my_jpeg_decode_context *jdc = malloc(sizeof(struct my_jpeg_decode_context));
+  jdc->width = jpc->width;
+  jdc->height = jpc->height;
+  jdc->restart_interval = jpc->restart_interval;
+  jdc->mcus_in_width = jpc->mcus_in_width;
+  jdc->mcus_in_height = jpc->mcus_in_height;
+
+  jdc->hc = create_huffman_context(jpc);
+  jdc->ic = create_idct_context(jpc);
+  jdc->cc = create_cc_context(jpc, rgb_data);
+
+  return jdc;
+	
 }
 
 struct jpeg_decode_context *create_jpeg_decode_context(struct jpeg_parse_context *jpc, uint8_t *rgb_data){

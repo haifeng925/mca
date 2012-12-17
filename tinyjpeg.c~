@@ -47,7 +47,7 @@ const char *tinyjpeg_get_errorstring() {
   return error_string;
 }
 
-#pragma omp task inout(*jdc) input(*jtask)
+
 void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
   struct huffman_context *hc = jdc->hc;
   struct idct_context *ic = jdc->ic;
@@ -70,11 +70,8 @@ void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask){
   mcus_posy = jtask->mcus_posy;
 
   for (j=0; j<jdc->restart_interval && mcus_posy< cc->mcus_in_height; j++) {
-#pragma omp task inout(*hc) input(*jtask) output(*idata)
     process_huffman_mcu(hc, jtask, idata);
-    #pragma omp task inout(*ic) input(*idata) output(*yuvdata)
     idct_mcu(ic, idata, yuvdata);
-    #pragma omp task inout(*cc) output(*yunvdata)
     convert_yuv_bgr(cc, yuvdata);
     
     cc->rgb_data += bytes_per_mcu;

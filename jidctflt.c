@@ -196,7 +196,6 @@ static void tinyjpeg_idct (float Q_table[64], short int *input_buf, uint8_t *out
 }
 
 
-#pragma omp task inout(*ic) input(*idata) output(*yuvdata)
 void idct_mcu(struct idct_context *ic, struct idct_data *idata, struct yuv_data *yuvdata){
 
   tinyjpeg_idct(ic->Q_tables[ic->q[cY]], idata->DCT_Y[0], yuvdata->Y, 16);

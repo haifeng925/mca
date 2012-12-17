@@ -195,10 +195,7 @@ static void tinyjpeg_idct (float Q_table[64], short int *input_buf, uint8_t *out
   }
 }
 
-
-#pragma omp task inout(*ic) input(*idata) output(*yuvdata)
 void idct_mcu(struct idct_context *ic, struct idct_data *idata, struct yuv_data *yuvdata){
-
   tinyjpeg_idct(ic->Q_tables[ic->q[cY]], idata->DCT_Y[0], yuvdata->Y, 16);
   tinyjpeg_idct(ic->Q_tables[ic->q[cY]], idata->DCT_Y[1], yuvdata->Y+8, 16);
   tinyjpeg_idct(ic->Q_tables[ic->q[cY]], idata->DCT_Y[2], yuvdata->Y+64*2, 16);
@@ -206,6 +203,19 @@ void idct_mcu(struct idct_context *ic, struct idct_data *idata, struct yuv_data 
 
   tinyjpeg_idct(ic->Q_tables[ic->q[cCb]], idata->DCT_C[0], yuvdata->Cb, 8);
   tinyjpeg_idct(ic->Q_tables[ic->q[cCr]], idata->DCT_C[1], yuvdata->Cr, 8);
+}
+
+void my_idct_mcu(struct idct_context *ic, struct my_idct_data *my_idata, struct my_yuv_data *my_yuvdata){
+
+  int i;
+  struct idct_data *idata;
+  struct yuv_data *yuvdata;
+  for (i = 0;i<MY_CHUNKSIZE;i++) {
+    idata = &(my_idata->d[i]);
+    yuvdata = &(my_yuvdata->d[i]);
+    idct_mcu(ic, idata, yuvdata);
+  }
+
 }
 
 struct idct_context *create_idct_context(struct jpeg_parse_context *jpc){

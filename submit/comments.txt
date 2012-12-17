@@ -1,0 +1,21 @@
+MCA-LAB Assignement 1 - OMPSS
+
+Haifeng Gao, ID: 342849
+Marco Taubmann, ID: 319326
+
+
+=================================
+USAGE
+=================================
+Type "make both" will create the tinyjpeg executable, decode the input file, write the result to the disk, check the md5 sum of that file and run the program with the target /dev/null. "make clean" will recover the initial state.
+
+To test different input files modify the "IMPATH" and "INPUT" variables in the Makefile.
+
+=================================
+COMMENTS
+=================================
+with markers:
+To get a parallel decoding for input files with marker we modified the loadjpeg.c file. We splitted the creation of the jdec_task from the decoding of that image blocks belongign to that task because the creation of the task is very fast. We first create all tasks for each marker and then start the decoding of those tasks seperate. The deconding then can be parallized, because each task is then indepenent of the others. The decoding of the task requires acces to the same initial jpeg_decode_context which then changes independent for each task, so we had to create an own jpeg_decode_context for each task. They all share the same target for the final rgb data but write to different locations in that buffer, so no synchonisation is needed for that part.
+
+without markers:
+The loadjpeg.c file also initializes the decoding of an input image without markers. Detecting this kind of image it only creates one jdec_task for the whole image and runs it with the special decoding function pipeline_decode_jpeg_task. This function pipelines the decoding of mcus by creating own threads for the three decoding steps of huffman decoding, inverse cosine transformation and YUV to RBG convertion. Because there can be several thousands mcus in one image the overhead for creating three threads for each mcu is very large. Therefore we group several mcus into one chunk (controlled by the define macro MY_CHUNKSIZE in the file tinyjpeg-internals.h). To support this chunks we use our own structure my_jpeg_decode_context which can hold the lager chunks of intermediate results. Our own wrapper functions my_process_huffman_mcu, my_idct_mcu and my_convert_yuv_bgr are build to split down the chunks into mcus and call the original functions with the intermediate results. These wrapper functions spawn as own thread for each chunk. The chunk size is crucial for the performance. A too small chunk size results in much overhead for thread creation. A too large chunk size results in an unweighted load balance for images that have less mcus than the chunk size. We found a chunk size of 1000 as an aproriate value for our testcases. The pipelined paralization offers the number indermediate buffers as another parameter. To create more independence amog the threads it is suitable to use different buffers in cyclic order for the intermediate resuts. Although two buffers should give the maximum independence, we found four buffers to pring the best performance. This parameter is controlled by the define macro MY_NR_BUFFERS in the file tinyjpeg-internal.h

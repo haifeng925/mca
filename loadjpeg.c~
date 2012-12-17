@@ -163,7 +163,6 @@ int convert_one_image(const char *infilename, const char *outfilename)
   wc = create_write_context(jpc, outfilename, rgb_data);
 
   printf("Decoding JPEG image...\n");
-
   //create_jdec_task needs to be performed sequentially
   //decode_jpeg_task can be performed in parallel for the case with markers
   jtask = malloc((sizeof(struct jdec_task)) * ntasks);

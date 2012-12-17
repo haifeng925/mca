@@ -36,6 +36,7 @@
 
 #include "tinyjpeg-internal.h"
 
+
 //tinyjpeg-parse.c
 struct jpeg_parse_context *create_jpeg_parse_context();
 void destroy_jpeg_parse_context(struct jpeg_parse_context *jpc);
@@ -43,28 +44,33 @@ void create_jdec_task(struct jpeg_parse_context *jpc, struct jdec_task *task, in
 int tinyjpeg_parse_context_header(struct jpeg_parse_context *jpc, const unsigned char *buf, unsigned int size);
 
 //conv_yuvbgr.c
-//#pragma omp task inout(*cc) output(*yuv)
 void convert_yuv_bgr(struct cc_context *cc, struct yuv_data *yuv);
+#pragma omp task inout(*cc) input(*my_yuv)
+void my_convert_yuv_bgr(struct cc_context *cc, struct my_yuv_data *my_yuv, unsigned int bytes_per_mcu, int mcus_posx, int mcus_posy, struct my_jpeg_decode_context *jdc, unsigned int bytes_per_blocklines);
 struct cc_context *create_cc_context(struct jpeg_parse_context *jpc, uint8_t *rgb_data);
 void destroy_cc_context(struct cc_context *cc);
 
 //jidctflt.c
-//#pragma omp task inout(*ic) input(*idata) output(*yuvdata)
 void idct_mcu(struct idct_context *ic, struct idct_data *idata, struct yuv_data *yuvdata);
+#pragma omp task inout(*ic) input(*my_idata) output(*my_yuvdata)
+void my_idct_mcu(struct idct_context *ic, struct my_idct_data *my_idata, struct my_yuv_data *my_yuvdata);
 struct idct_context *create_idct_context(struct jpeg_parse_context *jpc);
 void destroy_idct_context(struct idct_context *ic);
 
 //huffman.c
-//#pragma omp task inout(*hc) input(*hdata) output(*idata)
-void process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct idct_data *idata);
+#pragma omp task inout(*hc) input(*hdata) output(*my_idata)
+void my_process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct my_idct_data *my_idata);
+int process_huffman_mcu(struct huffman_context *hc, struct jdec_task *hdata, struct idct_data *idata);
 struct huffman_context *create_huffman_context(struct jpeg_parse_context *jpc);
 void destroy_huffman_context(struct huffman_context *hc);
 
 //tinyjpeg.c
 const char *tinyjpeg_get_errorstring();
-#pragma omp task inout(*jdc) input(*jtask)
+void pipeline_decode_jpeg_task(struct my_jpeg_decode_context *jdc, struct jdec_task *jtask);
+#pragma omp task inout(*jdc) inout(*jtask)
 void decode_jpeg_task(struct jpeg_decode_context *jdc, struct jdec_task *jtask);
 struct jpeg_decode_context *create_jpeg_decode_context(struct jpeg_parse_context *jpc, uint8_t *rgb_data);
+struct my_jpeg_decode_context *create_my_jpeg_decode_context(struct jpeg_parse_context *jpc, uint8_t *rgb_data);
 void destroy_jpeg_decode_context(struct jpeg_decode_context* jdc);
 
 
