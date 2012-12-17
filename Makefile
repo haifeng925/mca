@@ -39,12 +39,19 @@ runmk:
 check:
 	cd ../test_images && $(MD5SUM) $(MD5)
 
-checkmk:
+check_mk:
 	cd ../test_images && $(MD5SUM) $(MD5_MK)
 
 bmk :
-	rm $(IMGOUT) && ./$(EXEC) --benchmark $(IMGIN) $(IMGOUT)
+	if [-f $(IMGOUT)]; then rm $(IMGOUT); fi  && ./$(EXEC) --benchmark $(IMGIN) $(IMGOUT)
 
 bmk_mk :
 	rm $(IMGOUT_MK) && ./$(EXEC) --benchmark $(IMGIN_MK) $(IMGOUT_MK)
 
+
+null_bmk:
+	./$(EXEC) --benchmark $(IMGIN) /dev/null
+
+
+null_bmk_mk:
+	./$(EXEC) --benchmark $(IMGIN_MK) /dev/null
